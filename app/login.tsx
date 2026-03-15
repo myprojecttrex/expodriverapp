@@ -181,13 +181,7 @@ import {
 } from "react-native";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-
-// ── Hardcoded drivers (replace with Firebase Auth later) ──
-const DRIVER_ACCOUNTS: Record<string, { password: string; name: string; busNo: string; phone: string }> = {
-  driver1: { password: "driver123", name: "Ramesh Kumar", busNo: "TN-01-AB-1234", phone: "9876543210" },
-  driver2: { password: "driver456", name: "Suresh Babu", busNo: "TN-01-CD-5678", phone: "9123456780" },
-  driver3: { password: "driver789", name: "Arjun Selvam", busNo: "TN-01-EF-9012", phone: "9988776655" },
-};
+import { API_BASE_URL } from "../utils/apiConfig";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -203,34 +197,129 @@ export default function Login() {
     let valid = true;
     setUsernameErr("");
     setPasswordErr("");
-    if (!username.trim()) { setUsernameErr("Username is required"); valid = false; }
+    if (!username.trim()) { setUsernameErr("Phone number is required"); valid = false; }
     if (!password.trim()) { setPasswordErr("Password is required"); valid = false; }
     return valid;
   }
 
+  //   async function handleLogin() {
+  //   if (!validate()) return;
+
+  //   setLoading(true);
+  //   setPasswordErr("");
+  //   setUsernameErr("");
+
+  //   try {
+  //     const res = await fetch(`${API_BASE_URL}/api/auth/driver/login`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         phone: username.trim(),
+  //         password: password,
+  //       }),
+  //     });
+
+  //     // read response safely
+  //     const text = await res.text();
+  //     console.log("SERVER RESPONSE:", text);
+
+  //     let data;
+  //     try {
+  //       data = JSON.parse(text);
+  //     } catch (e) {
+  //       throw new Error("Server returned non-JSON response");
+  //     }
+
+  //     if (res.ok && data.success) {
+  //       await AsyncStorage.setItem("isLoggedIn", "true");
+  //       await AsyncStorage.setItem("token", data.token || "");
+  //       await AsyncStorage.setItem("driverId", String(data.user?.driver_id || ""));
+  //       await AsyncStorage.setItem("driverName", data.user?.name || "");
+  //       await AsyncStorage.setItem("driverPhone", data.user?.phone || "");
+  //       await AsyncStorage.setItem("driverBusNo", data.user?.bus_number || "");
+  //       await AsyncStorage.setItem("driverUser", username.trim());
+
+  //       if (data.user?.bus_id) {
+  //         await AsyncStorage.setItem("driverBusId", String(data.user.bus_id));
+  //       }
+
+  //       if (data.user?.company_name) {
+  //         await AsyncStorage.setItem("companyName", data.user.company_name);
+  //       }
+
+  //       router.replace("/(tabs)");
+  //     } else {
+  //       setPasswordErr(data.error || "Invalid phone number or password");
+  //       setLoading(false);
+  //     }
+
+  //   } catch (err) {
+  //     console.error("Login error:", err);
+  //     setPasswordErr("Cannot connect to server. Check your network or API.");
+  //     setLoading(false);
+  //   }
+  // }
   async function handleLogin() {
     if (!validate()) return;
+
     setLoading(true);
+    setPasswordErr("");
+    setUsernameErr("");
 
-    // Simulate network delay (replace with Firebase Auth)
-    await new Promise(r => setTimeout(r, 1000));
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/driver/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phone: username.trim(),
+          password: password,
+        }),
+      });
 
-    const driver = DRIVER_ACCOUNTS[username.toLowerCase().trim()];
+      // read response safely
+      const text = await res.text();
+      console.log("SERVER RESPONSE:", text);
 
-    if (driver && driver.password === password) {
-      // Save session
-      await AsyncStorage.setItem("isLoggedIn", "true");
-      await AsyncStorage.setItem("driverName", driver.name);
-      await AsyncStorage.setItem("driverBusNo", driver.busNo);
-      await AsyncStorage.setItem("driverPhone", driver.phone);
-      await AsyncStorage.setItem("driverUser", username.toLowerCase().trim());
-      router.replace("/(tabs)");
-    } else {
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error("Server returned non-JSON response");
+      }
+
+      if (res.ok && data.success) {
+        await AsyncStorage.setItem("isLoggedIn", "true");
+        await AsyncStorage.setItem("token", data.token || "");
+        await AsyncStorage.setItem("driverId", String(data.user?.driver_id || ""));
+        await AsyncStorage.setItem("driverName", data.user?.name || "");
+        await AsyncStorage.setItem("driverPhone", data.user?.phone || "");
+        await AsyncStorage.setItem("driverBusNo", data.user?.bus_number || "");
+        await AsyncStorage.setItem("driverUser", username.trim());
+
+        if (data.user?.bus_id) {
+          await AsyncStorage.setItem("driverBusId", String(data.user.bus_id));
+        }
+
+        if (data.user?.company_name) {
+          await AsyncStorage.setItem("companyName", data.user.company_name);
+        }
+
+        router.replace("/(tabs)");
+      } else {
+        setPasswordErr(data.error || "Invalid phone number or password");
+        setLoading(false);
+      }
+
+    } catch (err) {
+      console.error("Login error:", err);
+      setPasswordErr("Cannot connect to server. Check your network or API.");
       setLoading(false);
-      setPasswordErr("Invalid username or password");
     }
   }
-
   return (
     <LinearGradient colors={["#0f2027", "#203a43", "#2c5364"]} style={styles.bg}>
       <KeyboardAvoidingView
@@ -256,18 +345,20 @@ export default function Login() {
             <Text style={styles.cardTitle}>Welcome Back 👋</Text>
             <Text style={styles.cardSub}>Sign in to start your trip</Text>
 
-            {/* Username */}
-            <Text style={styles.label}>Username</Text>
+            {/* Phone (Username) */}
+            <Text style={styles.label}>Phone Number</Text>
             <View style={[styles.inputRow, usernameErr ? styles.inputErr : null]}>
-              <Ionicons name="person-outline" size={20} color="#6b7280" style={styles.inputIcon} />
+              <Ionicons name="call-outline" size={20} color="#6b7280" style={styles.inputIcon} />
               <TextInput
                 style={styles.inputField}
-                placeholder="Enter your username"
+                placeholder="Enter your phone number"
                 placeholderTextColor="#9ca3af"
                 autoCapitalize="none"
                 autoCorrect={false}
+                keyboardType="phone-pad"
+                maxLength={10}
                 value={username}
-                onChangeText={t => { setUsername(t); setUsernameErr(""); }}
+                onChangeText={t => { setUsername(t.replace(/[^0-9]/g, "")); setUsernameErr(""); }}
                 returnKeyType="next"
               />
               {username.length > 0 && (
@@ -321,15 +412,13 @@ export default function Login() {
 
             <Text style={styles.forgot}>Forgot password? Contact admin</Text>
 
-            {/* Demo accounts hint */}
+            {/* Login info hint */}
             <View style={styles.hintBox}>
-              <Text style={styles.hintTitle}>📋 Demo Accounts</Text>
-              {Object.entries(DRIVER_ACCOUNTS).map(([u, d]) => (
-                <TouchableOpacity key={u} onPress={() => { setUsername(u); setPassword(d.password); setUsernameErr(""); setPasswordErr(""); }} style={styles.hintRow}>
-                  <Ionicons name="person-circle-outline" size={18} color="#2c5364" />
-                  <Text style={styles.hintText}><Text style={{ fontWeight: "700" }}>{u}</Text>  ·  {d.password}  ·  {d.name}</Text>
-                </TouchableOpacity>
-              ))}
+              <Text style={styles.hintTitle}>ℹ️ Login Info</Text>
+              <Text style={styles.hintText}>
+                Use your <Text style={{ fontWeight: "700" }}>phone number</Text> and the{" "}
+                <Text style={{ fontWeight: "700" }}>password</Text> provided by your Company Admin when your account was created.
+              </Text>
             </View>
           </View>
 
@@ -367,9 +456,8 @@ const styles = StyleSheet.create({
   forgot: { textAlign: "center", color: "#94a3b8", marginTop: 16, fontSize: 13 },
 
   hintBox: { marginTop: 24, backgroundColor: "#f0f9ff", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: "#bae6fd" },
-  hintTitle: { fontSize: 13, fontWeight: "700", color: "#0369a1", marginBottom: 10 },
-  hintRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
-  hintText: { fontSize: 12, color: "#0f172a", flex: 1 },
+  hintTitle: { fontSize: 13, fontWeight: "700", color: "#0369a1", marginBottom: 8 },
+  hintText: { fontSize: 12, color: "#0f172a", lineHeight: 18 },
 
   footer: { textAlign: "center", color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 24 },
 });
